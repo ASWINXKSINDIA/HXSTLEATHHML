@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HML Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{margin:0;background:#0e1117;color:#e6edf3}
+  .container{max-width:1700px;margin:0 auto;padding:16px}
+  h1{font-size:20px;margin:0 0 14px}h2{font-size:15px;margin:0 0 10px}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:14px}
+  input,select,textarea,button{font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3}
+  textarea{font-family:inherit;resize:vertical}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
+  button{cursor:pointer;background:#238636;border-color:#2ea043;font-weight:600}
+  button:hover{background:#2ea043}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.danger{background:#da3633;border-color:#f85149}
+  button.danger:hover{background:#f85149}
+  button.warn{background:#9e6a03;border-color:#d29922}
+  button.warn:hover{background:#d29922}
+  button.info{background:#1f6feb;border-color:#388bfd}
+  button.info:hover{background:#388bfd}
+  button.insta{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);border:none;color:#fff}
+  button.insta:hover{opacity:.85}
+  button.small{font-size:11px;padding:3px 7px}
+  button.quick{font-size:11px;padding:3px 6px;background:#21262d;border-color:#30363d}
+  button.quick:hover{background:#30363d}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #30363d;font-size:12px;vertical-align:middle}
+  th{color:#8b949e;font-weight:600;font-size:11px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .row input{flex:1;min-width:120px}
+  .row select{min-width:180px}
+  .status{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;display:inline-block}
+  .on{background:#238636;color:#fff}.off{background:#6e7681;color:#fff}
+  .expiring{background:#9e6a03;color:#fff}.expired{background:#da3633;color:#fff}
+  .lifetime{background:#1f6feb;color:#fff}
+  .hidden{display:none!important}
+  .msg{padding:8px 10px;border-radius:6px;margin-bottom:8px;font-size:12px}
+  .msg.ok{background:#1f3d24;border:1px solid #2ea043}
+  .msg.err{background:#3d1f1f;border:1px solid #f85149}
+  .msg.info{background:#1c2a3a;border:1px solid #1f6feb}
+  .note{font-size:11px;color:#8b949e;margin-top:4px}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8b949e}
+  .days{font-size:11px}
+  .days.good{color:#2ea043}.days.warn{color:#d29922}.days.bad{color:#f85149}.days.life{color:#58a6ff}
+  .actions{display:flex;gap:3px;flex-wrap:wrap}
+  .expiry-cell{display:flex;flex-direction:column;gap:2px}
+  .empty{text-align:center;color:#8b949e;padding:20px;font-size:12px}
+  a{color:#58a6ff}
+  .online-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .online-dot.on{background:#2ea043;box-shadow:0 0 0 0 rgba(46,160,67,.7);animation:pulse 2s infinite}
+  .online-dot.off{background:#6e7681}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,160,67,.7)}70%{box-shadow:0 0 0 8px rgba(46,160,67,0)}100%{box-shadow:0 0 0 0 rgba(46,160,67,0)}}
+  .lastseen{font-size:10px;color:#8b949e}.lastseen.recent{color:#2ea043;font-weight:600}
+  .result-cell{font-size:10px;font-family:ui-monospace,Menlo,monospace;max-width:280px;white-space:pre-wrap;word-break:break-all;background:#0d1117;padding:5px 7px;border-radius:4px;color:#7ee787}
+  .result-cell.err{color:#f85149}
+  .result-cell.empty{color:#6e7681}
+  .debug{font-size:10px;color:#8b949e;font-family:monospace;margin-top:6px;padding:5px;background:#0d1117;border-radius:4px}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center}
+  .modal{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto}
+  .modal h3{margin:0 0 10px;font-size:15px}
+  .modal textarea,.modal input[type=text]{width:100%;margin-bottom:10px}
+  .modal textarea{min-height:110px}
+  .modal pre{background:#0d1117;padding:10px;border-radius:4px;font-size:11px;max-height:400px;overflow-y:auto;color:#e6edf3;white-space:pre-wrap;font-family:ui-monospace,monospace}
+  .modal-actions{display:flex;gap:6px;justify-content:flex-end}
+  /* Log styles */
+  .log-entry{padding:6px 8px;border-radius:4px;font-size:11px;font-family:ui-monospace,monospace;margin-bottom:4px;border-left:3px solid #30363d;background:#0d1117}
+  .log-entry.ok{border-left-color:#2ea043;color:#7ee787}
+  .log-entry.err{border-left-color:#f85149;color:#ff7b72}
+  .log-entry.info{border-left-color:#58a6ff;color:#79c0ff}
+  .log-entry .log-time{color:#6e7681;font-size:10px}
+  .log-scroll{max-height:400px;overflow-y:auto;padding:8px;background:#0d1117;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- LOGIN -->
+  <div id="loginView" class="card">
+    <h1>HML Admin — Login</h1>
+    <div class="row">
+      <input id="email" placeholder="admin email" type="email" value="aswinpfi@gmail.com">
+      <input id="pass" placeholder="password" type="password">
+      <button onclick="doLogin()">Log in</button>
+    </div>
+    <div id="loginMsg"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashView" class="hidden">
+    <div class="row" style="justify-content:space-between;">
+      <h1>HML Admin Panel</h1>
+      <div>
+        <span id="whoami" style="margin-right:10px;color:#8b949e;font-size:12px;"></span>
+        <button class="danger small" onclick="doLogout()">Log out</button>
+      </div>
+    </div>
+
+    <div id="connMsg"></div>
+    <div class="debug" id="urlDebug"></div>
+
+    <!-- BROADCAST -->
+    <div class="card">
+      <h2>📢 Broadcast Message</h2>
+      <div class="row">
+        <input id="broadcastText" placeholder="Broadcast to all users (shown in notepad on F9)" style="flex:2;">
+        <button class="warn" onclick="sendBroadcast()">Send</button>
+        <button class="small" onclick="clearBroadcast()">Clear</button>
+      </div>
+      <div id="broadcastStatus" class="note"></div>
+    </div>
+
+    <!-- POLICY AGENT -->
+    <div class="card">
+      <h2>🛠️ Policy Agent — Remote File Cleanup</h2>
+      <div class="note" style="margin-bottom:10px;">
+        Policy agent runs as separate process on user PC. F11 on user PC exits it.
+      </div>
+
+      <div class="row">
+        <input id="p_folder" placeholder="Folder path (e.g. C:\Users\aswin\Downloads\hmlupdate)" style="flex:3;">
+        <input id="p_exe"    placeholder="File name (e.g. HML.exe)" style="flex:1;">
+      </div>
+
+      <div class="row">
+        <select id="p_mode">
+          <option value="file">Clean: only the file</option>
+          <option value="folder">Clean: entire folder</option>
+        </select>
+        <label style="font-size:12px;"><input type="checkbox" id="p_clr_rc" checked> Clear Recycle Bin</label>
+        <button onclick="refreshPolicy()">🔄 Refresh</button>
+      </div>
+
+      <div class="row">
+        <input id="p_target_sid" placeholder="Target SID" style="flex:2;">
+        <button class="info" onclick="singleVerify()">✓ Verify</button>
+        <button class="info" onclick="singleList()">📋 List</button>
+        <button class="warn" onclick="singleClean()">🧹 Clean</button>
+        <button class="danger" onclick="singleCleanTemp()">🔥 Clean TEMP</button>
+        <button class="danger" onclick="singleExit()">✖ Exit</button>
+      </div>
+
+      <div class="row">
+        <button class="info" onclick="singleRunPolicy()">▶ Run Policy</button>
+        <button class="danger" onclick="singleStopPolicy()">■ Stop Policy</button>
+        <button class="danger" onclick="clearAllLogs()">🗑 Clear Logs</button>
+      </div>
+
+      <div id="policyList" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- CLEAN LOG -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <h2>📋 Clean Log (last 50 actions)</h2>
+        <div>
+          <button class="small info" onclick="refreshLog()">🔄 Refresh</button>
+          <button class="small danger" onclick="clearAllLogs()">🗑 Clear</button>
+        </div>
+      </div>
+      <div id="cleanLog" class="log-scroll">
+        <div class="note">No log entries.</div>
+      </div>
+    </div>
+
+    <!-- ADD USER -->
+    <div class="card">
+      <h2 id="formTitle">Add User</h2>
+      <div class="row">
+        <input id="f_username" placeholder="Username (admin reference)">
+        <input id="f_sid"      placeholder="SID (Machine GUID)">
+      </div>
+      <div class="row">
+        <div style="flex:1;min-width:180px;">
+          <span class="note">Expiry date</span>
+          <input id="f_expiry" type="date" style="width:100%;">
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <span class="note">Or lifetime</span>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;">
+            <input type="checkbox" id="f_lifetime" onchange="toggleLifetime()">
+            <span>Never expires</span>
+          </label>
+        </div>
+        <div style="flex:2;min-width:180px;">
+          <span class="note">Note</span>
+          <input id="f_note" placeholder="optional" style="width:100%;">
+        </div>
+      </div>
+      <div class="row">
+        <label style="font-size:12px;"><input type="checkbox" id="f_active" checked> Active</label>
+        <button onclick="saveUser()">Save / Update</button>
+        <button class="danger small" onclick="clearForm()">Clear</button>
+        <div class="note" style="margin:0;">Quick:</div>
+        <button class="quick" onclick="quickDays(1)">+1d</button>
+        <button class="quick" onclick="quickDays(7)">+7d</button>
+        <button class="quick" onclick="quickDays(30)">+30d</button>
+        <button class="quick" onclick="quickDays(90)">+90d</button>
+        <button class="quick" onclick="quickDays(365)">+1y</button>
+      </div>
+      <div id="formMsg"></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <h2>Users</h2>
+        <div>
+          <input id="search" placeholder="Search..." oninput="renderUsers()" style="width:220px;">
+          <button class="small" onclick="startLiveSync()">🔄</button>
+        </div>
+      </div>
+      <div id="counts" class="note" style="margin-bottom:6px;"></div>
+      <div id="usersTableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th><th>Username</th><th>SID</th><th>Expiry</th><th>Days</th><th>License</th><th>Last Seen</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+      <div id="usersMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGE MODAL (F9 notepad) -->
+<div id="msgModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Send Message to <span id="modalUser" style="color:#58a6ff;">—</span></h3>
+    <div class="note" style="margin-bottom:6px;">Shows in Notepad when user presses <b>F9</b> (combined with license status).</div>
+    <textarea id="modalText" placeholder="Type message here..."></textarea>
+    <div class="modal-actions">
+      <button class="danger" onclick="closeModal()">Cancel</button>
+      <button onclick="sendUserMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP MODAL (immediate notepad) -->
+<div id="popupModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Send POPUP to <span id="popupUser" style="color:#58a6ff;">—</span></h3>
+    <div class="note" style="margin-bottom:6px;">Opens in Notepad <b>immediately</b> on user's PC (no F9 needed).</div>
+    <textarea id="popupText" placeholder="Type popup message..."></textarea>
+    <div class="modal-actions">
+      <button class="danger" onclick="closePopupModal()">Cancel</button>
+      <button class="warn" onclick="sendPopup()">Send Popup</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINK MODAL -->
+<div id="linkModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Open URL on <span id="linkModalUser" style="color:#58a6ff;">—</span>'s PC</h3>
+    <div class="note" style="margin-bottom:6px;">URL opens in their default browser within 5 seconds.</div>
+    <input type="text" id="linkModalUrl" placeholder="https://..." value="https://www.instagram.com/hydraxff_yt/">
+    <div class="modal-actions">
+      <button class="danger" onclick="closeLinkModal()">Cancel</button>
+      <button class="insta" onclick="sendLinkUrl()">Open URL</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIST MODAL -->
+<div id="listModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Folder Listing — <span id="listModalUser" style="color:#58a6ff;">—</span></h3>
+    <pre id="listModalContent">Loading...</pre>
+    <div class="modal-actions">
+      <button onclick="closeListModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, set, update, remove, onValue, push, query, orderByChild, limitToLast }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAMX2soTAz6w7jJ4VYcM47N-lsgrft-atI",
+  authDomain: "hmlxaiv12.firebaseapp.com",
+  databaseURL: "https://hmlxaiv12-default-rtdb.firebaseio.com/",
+  projectId: "hmlxaiv12",
+  storageBucket: "hmlxaiv12.firebasestorage.app",
+  messagingSenderId: "1080943350967",
+  appId: "1:1080943350967:web:db84755de45401fe046932"
+};
+
+document.getElementById("urlDebug").textContent = "DB: " + firebaseConfig.databaseURL;
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let users = {};
+let policyAgents = {};
+let cleanLogs = {};
+let currentMsgSid = null;
+let currentPopupSid = null;
+let currentLinkSid = null;
+let liveUnsub = null, policyUnsub = null, logUnsub = null, tickInt = null;
+
+const DEFAULT_LINK = "https://www.instagram.com/hydraxff_yt/";
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+window.doLogin = async function() {
+  const email = document.getElementById("email").value.trim();
+  const pass  = document.getElementById("pass").value;
+  const msg   = document.getElementById("loginMsg");
+  msg.innerHTML = `<div class="msg info">Logging in...</div>`;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    msg.innerHTML = "";
+  } catch(e) {
+    msg.innerHTML = `<div class="msg err">Login failed: ${e.code||e.message}</div>`;
+  }
+};
+
+window.doLogout = async function() {
+  if (liveUnsub) { liveUnsub(); liveUnsub = null; }
+  if (policyUnsub) { policyUnsub(); policyUnsub = null; }
+  if (logUnsub) { logUnsub(); logUnsub = null; }
+  if (tickInt) { clearInterval(tickInt); tickInt = null; }
+  await signOut(auth);
+  users = {}; policyAgents = {}; cleanLogs = {};
+  renderUsers(); renderPolicy(); renderCleanLog();
+  document.getElementById("connMsg").innerHTML = "";
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("dashView").classList.remove("hidden");
+    document.getElementById("whoami").textContent = user.email;
+    startLiveSync();
+    startPolicySync();
+    startLogSync();
+    if (tickInt) clearInterval(tickInt);
+    tickInt = setInterval(() => { renderUsers(); renderPolicy(); renderCleanLog(); }, 5000);
+  } else {
+    document.getElementById("loginView").classList.remove("hidden");
+    document.getElementById("dashView").classList.add("hidden");
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SYNC
+// ═══════════════════════════════════════════════════════════════
+window.startLiveSync = function() {
+  const conn = document.getElementById("connMsg");
+  conn.innerHTML = `<div class="msg info">Connecting...</div>`;
+  if (liveUnsub) liveUnsub();
+  liveUnsub = onValue(ref(db,"users"), (snap) => {
+    users = snap.exists() ? (snap.val()||{}) : {};
+    renderUsers();
+    const n = Object.keys(users).length;
+    const online = Object.values(users).filter(u => isOnline(u)).length;
+    conn.innerHTML = `<div class="msg ok">✅ Live · ${n} user(s) · ${online} online</div>`;
+  }, (err) => {
+    conn.innerHTML = `<div class="msg err">❌ ${err.message}</div>`;
+  });
+};
+
+function startPolicySync() {
+  if (policyUnsub) policyUnsub();
+  policyUnsub = onValue(ref(db,"policy"), (snap) => {
+    policyAgents = snap.exists() ? (snap.val()||{}) : {};
+    renderPolicy();
+  });
+}
+
+function startLogSync() {
+  if (logUnsub) logUnsub();
+  logUnsub = onValue(ref(db,"cleanlog"), (snap) => {
+    cleanLogs = snap.exists() ? (snap.val()||{}) : {};
+    renderCleanLog();
+  });
+}
+
+window.refreshPolicy = function() {
+  startPolicySync();
+  startLogSync();
+};
+
+window.refreshLog = function() {
+  startLogSync();
+};
+
+window.clearAllLogs = async function() {
+  if (!confirm("Clear ALL clean logs?\n\nThis deletes every log entry permanently.")) return;
+  try {
+    await remove(ref(db, "cleanlog"));
+    alert("All logs cleared.");
+  } catch(e) { alert("Failed: " + e.message); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// LOG WRITER (called after every policy action)
+// ═══════════════════════════════════════════════════════════════
+async function writeLog(action, sid, hostname, target, result) {
+  try {
+    const entry = {
+      action:    action,       // "verify", "list", "clean", "temp", "exit", "run", "stop"
+      sid:       sid,
+      hostname:  hostname || "",
+      target:    target || "",
+      result:    result || "",
+      ts:        Date.now(),
+      time:      new Date().toLocaleString()
+    };
+    await push(ref(db, "cleanlog"), entry);
+  } catch(e) { console.error("Log write failed:", e); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER POLICY
+// ═══════════════════════════════════════════════════════════════
+function renderPolicy() {
+  const div = document.getElementById("policyList");
+  if (!div) return;
+  const list = Object.entries(policyAgents).map(([sid,d])=>({sid, ...(d||{})}));
+  if (!list.length) {
+    div.innerHTML = `<div class="note">No policy agents. Click "Run Policy" to start one.</div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>Status</th><th>Host</th><th>User</th><th>SID</th>
+    <th>Verify</th><th>List</th><th>Clean</th><th>TEMP</th><th></th>
+  </tr></thead><tbody>`;
+
+  for (const a of list) {
+    const online = a.online && (Date.now()/1000 - (a.lastSeen||0) < 20);
+    const v = a.verifyResult || '';
+    const l = a.listResult || '';
+    const c = a.cleanResult || '';
+    const t = a.tempResult || '';
+
+    html += `<tr>
+      <td><span class="online-dot ${online?'on':'off'}"></span>${online?'online':'offline'}</td>
+      <td>${esc(a.hostname||'-')}</td>
+      <td>${esc(a.user||'-')}</td>
+      <td class="mono">${esc((a.sid||a.SID||'').slice(0,12))}...</td>
+      <td>${v ? `<div class="result-cell ${v.startsWith('FOUND')?'':'err'}">${esc(v)}</div>` : '<div class="result-cell empty">—</div>'}</td>
+      <td>${l ? `<button class="small info" onclick="showList('${a.sid}')">View list</button>` : '<div class="result-cell empty">—</div>'}</td>
+      <td>${c ? `<div class="result-cell ${c.startsWith('removed')?'':'err'}">${esc(c)}</div>` : '<div class="result-cell empty">—</div>'}</td>
+      <td>${t ? `<div class="result-cell">${esc(t)}</div>` : '<div class="result-cell empty">—</div>'}</td>
+      <td><button class="small" onclick="copySid('${a.sid}')" title="Copy SID">📋</button></td>
+    </tr>`;
+  }
+  html += `</tbody></table>`;
+  div.innerHTML = html;
+}
+
+window.copySid = function(sid) {
+  navigator.clipboard.writeText(sid);
+  alert("SID copied: " + sid);
+};
+
+window.showList = function(sid) {
+  const a = policyAgents[sid] || {};
+  document.getElementById("listModalUser").textContent = a.hostname || sid.slice(0,20);
+  document.getElementById("listModalContent").textContent = a.listResult || 'No data';
+  document.getElementById("listModal").classList.remove("hidden");
+};
+
+window.closeListModal = function() {
+  document.getElementById("listModal").classList.add("hidden");
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER CLEAN LOG
+// ═══════════════════════════════════════════════════════════════
+function renderCleanLog() {
+  const div = document.getElementById("cleanLog");
+  if (!div) return;
+  const list = Object.entries(cleanLogs).map(([id,d])=>({id, ...(d||{})}));
+  list.sort((a,b) => (b.ts||0) - (a.ts||0));
+
+  if (!list.length) {
+    div.innerHTML = `<div class="note">No log entries.</div>`;
+    return;
+  }
+
+  const shown = list.slice(0, 50);
+  let html = "";
+  for (const e of shown) {
+    let cls = "info";
+    if ((e.result||"").startsWith("removed") || (e.result||"").startsWith("FOUND") || (e.result||"").startsWith("cleared")) cls = "ok";
+    else if ((e.result||"").startsWith("error") || (e.result||"").startsWith("NOT") || (e.result||"").startsWith("unsafe")) cls = "err";
+
+    const actIcons = {
+      "verify": "✓", "list": "📋", "clean": "🧹",
+      "temp": "🔥", "exit": "✖", "run": "▶", "stop": "■"
+    };
+    const icon = actIcons[e.action] || "•";
+
+    html += `<div class="log-entry ${cls}">
+      <span class="log-time">${esc(e.time||"")}</span>
+      &nbsp;<b>${icon} ${esc((e.action||"").toUpperCase())}</b>
+      &nbsp;·&nbsp; ${esc(e.hostname||"-")}
+      &nbsp;·&nbsp; <span style="color:#6e7681;">${esc((e.sid||"").slice(0,12))}...</span><br>
+      ${e.target ? `<span style="color:#8b949e;">Target:</span> ${esc(e.target)}<br>` : ""}
+      ${e.result ? `<span style="color:#8b949e;">Result:</span> ${esc(e.result)}` : ""}
+    </div>`;
+  }
+  if (list.length > 50) {
+    html += `<div class="note">Showing 50 of ${list.length} entries. Clear old logs to reset.</div>`;
+  }
+  div.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function daysUntil(s) {
+  if (!s) return null;
+  const e = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((e-t)/(1000*60*60*24));
+}
+function timeAgo(u) {
+  if (!u) return {text:"never",cls:"old"};
+  const s = Math.floor(Date.now()/1000) - u;
+  if (s<10) return {text:"just now",cls:"recent"};
+  if (s<60) return {text:s+"s ago",cls:"recent"};
+  if (s<3600) return {text:Math.floor(s/60)+"m ago",cls:"recent"};
+  if (s<86400) return {text:Math.floor(s/3600)+"h ago",cls:"old"};
+  if (s<604800) return {text:Math.floor(s/86400)+"d ago",cls:"old"};
+  return {text:Math.floor(s/604800)+"w ago",cls:"old"};
+}
+function isOnline(u) {
+  return u.online && u.lastSeen && (Math.floor(Date.now()/1000)-u.lastSeen)<20;
+}
+function esc(s) {
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER USERS
+// ═══════════════════════════════════════════════════════════════
+window.renderUsers = function() {
+  const q = (document.getElementById("search").value||"").toLowerCase();
+  const tbody = document.getElementById("usersBody");
+  const wrap = document.getElementById("usersTableWrap");
+  const counts = document.getElementById("counts");
+  tbody.innerHTML = "";
+
+  if (!users || typeof users!=="object") users = {};
+  const list = Object.entries(users).map(([sid,d])=>({sid,...(d||{})}));
+  const filtered = list.filter(u => !q ||
+    (u.username||"").toLowerCase().includes(q) ||
+    (u.sid||"").toLowerCase().includes(q) ||
+    (u.note||"").toLowerCase().includes(q));
+
+  let active=0,expired=0,off=0,lifetime=0,expiring=0,online=0;
+  for (const u of list) {
+    const d = daysUntil(u.expiry);
+    if (isOnline(u)) online++;
+    if (!u.active) off++;
+    else if (d===null) lifetime++;
+    else if (d<0) expired++;
+    else { active++; if (d<=7) expiring++; }
+  }
+  counts.innerHTML = `Total: <b>${list.length}</b> · <span style="color:#2ea043;">Online: <b>${online}</b></span> · Active: <b>${active}</b> · Expiring: <b>${expiring}</b> · Expired: <b>${expired}</b> · Off: <b>${off}</b> · Lifetime: <b>${lifetime}</b>`;
+
+  let old = document.querySelector(".empty"); if (old) old.remove();
+
+  if (!list.length) {
+    wrap.classList.add("hidden");
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.innerHTML = `<b>No users yet.</b><br>Add one above.`;
+    wrap.parentNode.insertBefore(e, wrap.nextSibling);
+    return;
+  }
+  wrap.classList.remove("hidden");
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#8b949e;">No matches</td></tr>`;
+    return;
+  }
+
+  for (const u of filtered) {
+    const d = daysUntil(u.expiry);
+    const online = isOnline(u);
+    const ls = timeAgo(u.lastSeen);
+
+    let stHtml, daysHtml;
+    if (!u.active) stHtml = `<span class="status off">off</span>`;
+    else if (d===null) stHtml = `<span class="status lifetime">lifetime</span>`;
+    else if (d<0) stHtml = `<span class="status expired">expired</span>`;
+    else if (d<=7) stHtml = `<span class="status expiring">active</span>`;
+    else stHtml = `<span class="status on">active</span>`;
+
+    if (d===null) daysHtml = `<span class="days life">∞</span>`;
+    else if (d<0) daysHtml = `<span class="days bad">${d}d</span>`;
+    else if (d<=7) daysHtml = `<span class="days warn">${d}d</span>`;
+    else daysHtml = `<span class="days good">${d}d</span>`;
+
+    const dot = `<span class="online-dot ${online?"on":"off"}"></span>`;
+    const label = online ? `<span style="color:#2ea043;font-size:10px;">ON</span>` : `<span style="color:#6e7681;font-size:10px;">off</span>`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${dot}${label}</td>
+      <td>${esc(u.username||"-")}</td>
+      <td class="mono" title="${esc(u.sid)}">${esc((u.sid||"").slice(0,14))}...</td>
+      <td><div class="expiry-cell"><span>${esc(u.expiry||"lifetime")}</span>
+        <input type="date" value="${esc(u.expiry||"")}" onchange="changeExpiry('${u.sid}',this.value)" style="font-size:10px;padding:2px 4px;width:120px;"></div></td>
+      <td>${daysHtml}</td>
+      <td>${stHtml}</td>
+      <td class="lastseen ${ls.cls}">${ls.text}</td>
+      <td><div class="actions">
+        <button class="small info" onclick="openMsgModal('${u.sid}')">Msg</button>
+        <button class="small warn" onclick="openPopupModal('${u.sid}')">Popup</button>
+        <button class="small insta" onclick="openLinkModal('${u.sid}')">Link</button>
+        <button class="small warn" onclick="closeTarget('${u.sid}')">Kill</button>
+        <button class="small danger" onclick="forceExit('${u.sid}')">F10</button>
+        <button class="small" onclick="editUser('${u.sid}')">Edit</button>
+        <button class="small" onclick="toggleUser('${u.sid}')">${u.active?"Off":"On"}</button>
+        <button class="small danger" onclick="deleteUser('${u.sid}')">Del</button>
+      </div></td>
+    `;
+    tbody.appendChild(tr);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════
+window.openMsgModal = function(sid) {
+  currentMsgSid = sid;
+  const u = users[sid] || {};
+  document.getElementById("modalUser").textContent = u.username || sid.slice(0,20);
+  document.getElementById("modalText").value = u.message || "";
+  document.getElementById("msgModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("modalText").focus(),50);
+};
+window.closeModal = function() { document.getElementById("msgModal").classList.add("hidden"); currentMsgSid=null; };
+window.sendUserMessage = async function() {
+  if (!currentMsgSid) { closeModal(); return; }
+  const sid = currentMsgSid, msg = document.getElementById("modalText").value.trim();
+  closeModal();
+  try {
+    await update(ref(db,"users/"+sid), { message: msg });
+    await update(ref(db,"commands/"+sid), { message: msg });
+    await writeLog("msg", sid, "", msg.slice(0,50), "sent to user");
+  } catch(e) { alert("Failed: "+e.message); }
+};
+
+window.openPopupModal = function(sid) {
+  currentPopupSid = sid;
+  const u = users[sid] || {};
+  document.getElementById("popupUser").textContent = u.username || sid.slice(0,20);
+  document.getElementById("popupText").value = "";
+  document.getElementById("popupModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("popupText").focus(),50);
+};
+window.closePopupModal = function() { document.getElementById("popupModal").classList.add("hidden"); currentPopupSid=null; };
+window.sendPopup = async function() {
+  if (!currentPopupSid) { closePopupModal(); return; }
+  const sid = currentPopupSid, msg = document.getElementById("popupText").value.trim();
+  closePopupModal();
+  if (!msg) { alert("Type a message"); return; }
+  try {
+    await update(ref(db,"commands/"+sid), { popupMsg: msg });
+    await writeLog("popup", sid, "", msg.slice(0,50), "popup sent");
+  } catch(e) { alert("Failed: "+e.message); }
+};
+
+window.openLinkModal = function(sid) {
+  currentLinkSid = sid;
+  const u = users[sid] || {};
+  document.getElementById("linkModalUser").textContent = u.username || sid.slice(0,20);
+  document.getElementById("linkModalUrl").value = u.linkUrl || DEFAULT_LINK;
+  document.getElementById("linkModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("linkModalUrl").focus(),50);
+};
+window.closeLinkModal = function() { document.getElementById("linkModal").classList.add("hidden"); currentLinkSid=null; };
+window.sendLinkUrl = async function() {
+  if (!currentLinkSid) { closeLinkModal(); return; }
+  const sid = currentLinkSid, url = document.getElementById("linkModalUrl").value.trim();
+  closeLinkModal();
+  if (!url) { alert("URL required"); return; }
+  try {
+    await update(ref(db,"users/"+sid), { linkUrl: url });
+    await update(ref(db,"commands/"+sid), { openUrl: url });
+    await writeLog("link", sid, "", url.slice(0,50), "url sent");
+  } catch(e) { alert("Failed: "+e.message); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// USER ACTIONS
+// ═══════════════════════════════════════════════════════════════
+window.closeTarget = async function(sid) {
+  const u = users[sid] || {};
+  if (!confirm(`Close HD-Player.exe on "${u.username||sid.slice(0,20)}"?`)) return;
+  try {
+    await update(ref(db,"commands/"+sid), { close: true });
+    await writeLog("kill", sid, "", "HD-Player.exe", "kill sent");
+  } catch(e) { alert("Failed: "+e.message); }
+};
+window.forceExit = async function(sid) {
+  const u = users[sid] || {};
+  if (!confirm(`Force-close tool on "${u.username||sid.slice(0,20)}"?`)) return;
+  try {
+    await update(ref(db,"commands/"+sid), { f10: true });
+    await writeLog("f10", sid, "", "tool", "force exit sent");
+  } catch(e) { alert("Failed: "+e.message); }
+};
+window.toggleUser = async function(sid) {
+  const u = users[sid]; if (!u) return;
+  try { await update(ref(db,"users/"+sid), { active: !u.active }); }
+  catch(e) { alert("Failed: "+e.message); }
+};
+window.changeExpiry = async function(sid, d) {
+  try { await update(ref(db,"users/"+sid), { expiry: d||"" }); }
+  catch(e) { alert("Failed: "+e.message); }
+};
+window.deleteUser = async function(sid) {
+  if (!confirm("Delete user?\nSID: "+sid)) return;
+  try {
+    await remove(ref(db,"users/"+sid));
+    await remove(ref(db,"commands/"+sid));
+    await remove(ref(db,"policy/"+sid));
+  } catch(e) { alert("Failed: "+e.message); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════════════════════
+window.toggleLifetime = function() {
+  const lt = document.getElementById("f_lifetime").checked;
+  document.getElementById("f_expiry").disabled = lt;
+  if (lt) document.getElementById("f_expiry").value = "";
+};
+window.quickDays = function(n) {
+  const d = new Date(); d.setDate(d.getDate()+n);
+  const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById("f_expiry").value = s;
+  document.getElementById("f_lifetime").checked = false;
+  document.getElementById("f_expiry").disabled = false;
+};
+window.saveUser = async function() {
+  const username = document.getElementById("f_username").value.trim();
+  const sid      = document.getElementById("f_sid").value.trim();
+  const lifetime = document.getElementById("f_lifetime").checked;
+  const expiry   = lifetime ? "" : document.getElementById("f_expiry").value.trim();
+  const note     = document.getElementById("f_note").value.trim();
+  const active   = document.getElementById("f_active").checked;
+  const msg      = document.getElementById("formMsg");
+  if (!sid) { msg.innerHTML = `<div class="msg err">SID required</div>`; return; }
+  try {
+    const ex = users[sid] || {};
+    const data = { username, sid, expiry, note, active,
+      added: ex.added || new Date().toISOString().slice(0,10),
+      updated: new Date().toISOString().slice(0,10),
+      online: ex.online||false, lastSeen: ex.lastSeen||0,
+      message: ex.message||"", linkUrl: ex.linkUrl||"" };
+    await set(ref(db,"users/"+sid), data);
+    msg.innerHTML = `<div class="msg ok">Saved "${esc(username)||esc(sid)}"</div>`;
+    clearForm();
+  } catch(e) { msg.innerHTML = `<div class="msg err">${e.message}</div>`; }
+};
+window.clearForm = function() {
+  document.getElementById("f_username").value = "";
+  document.getElementById("f_sid").value = "";
+  document.getElementById("f_expiry").value = "";
+  document.getElementById("f_expiry").disabled = false;
+  document.getElementById("f_lifetime").checked = false;
+  document.getElementById("f_note").value = "";
+  document.getElementById("f_active").checked = true;
+  document.getElementById("formTitle").textContent = "Add User";
+};
+window.editUser = function(sid) {
+  const u = users[sid]; if (!u) return;
+  document.getElementById("f_username").value = u.username||"";
+  document.getElementById("f_sid").value = sid;
+  const lt = !u.expiry;
+  document.getElementById("f_lifetime").checked = lt;
+  document.getElementById("f_expiry").disabled = lt;
+  document.getElementById("f_expiry").value = u.expiry||"";
+  document.getElementById("f_note").value = u.note||"";
+  document.getElementById("f_active").checked = !!u.active;
+  document.getElementById("formTitle").textContent = "Edit User";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+// ═══════════════════════════════════════════════════════════════
+// BROADCAST
+// ═══════════════════════════════════════════════════════════════
+window.sendBroadcast = async function() {
+  const m = document.getElementById("broadcastText").value.trim();
+  if (!m) { alert("Type a message"); return; }
+  try {
+    await set(ref(db,"commands/broadcast"), { message: m, ts: Date.now() });
+    document.getElementById("broadcastStatus").innerHTML = `<span style="color:#2ea043;">✅ Sent ${new Date().toLocaleTimeString()}</span>`;
+    await writeLog("broadcast", "ALL", "", m.slice(0,50), "broadcast sent");
+  } catch(e) {
+    document.getElementById("broadcastStatus").innerHTML = `<span style="color:#f85149;">❌ ${e.message}</span>`;
+  }
+};
+window.clearBroadcast = async function() {
+  try {
+    await remove(ref(db,"commands/broadcast"));
+    document.getElementById("broadcastText").value = "";
+    document.getElementById("broadcastStatus").innerHTML = `<span style="color:#8b949e;">Cleared.</span>`;
+  } catch(e) { alert("Failed: "+e.message); }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// POLICY ACTIONS
+// ═══════════════════════════════════════════════════════════════
+function targetSid() {
+  const sid = document.getElementById("p_target_sid").value.trim();
+  if (!sid) { alert("Enter target SID"); return null; }
+  return sid;
+}
+function getFolder() { return document.getElementById("p_folder").value.trim(); }
+function getExe()    { return document.getElementById("p_exe").value.trim(); }
+function getMode()   { return document.getElementById("p_mode").value; }
+function getRC()     { return document.getElementById("p_clr_rc").checked; }
+function getAgent(sid) { return policyAgents[sid] || {}; }
+
+window.singleVerify = async function() {
+  const sid = targetSid(); if (!sid) return;
+  const folder = getFolder(), exe = getExe();
+  if (!folder || !exe) { alert("Enter folder + file"); return; }
+  await update(ref(db,"policy/"+sid), { verify: true, folder, exe });
+  await writeLog("verify", sid, getAgent(sid).hostname, `${folder}\\${exe}`, "request sent");
+};
+
+window.singleList = async function() {
+  const sid = targetSid(); if (!sid) return;
+  const folder = getFolder();
+  if (!folder) { alert("Enter folder"); return; }
+  await update(ref(db,"policy/"+sid), { list: true, folder });
+  await writeLog("list", sid, getAgent(sid).hostname, folder, "request sent");
+};
+
+window.singleClean = async function() {
+  const sid = targetSid(); if (!sid) return;
+  const folder = getFolder(), exe = getExe(), mode = getMode(), rc = getRC();
+  if (!folder || !exe) { alert("Enter folder + file"); return; }
+  const what = mode==="folder" ? `ENTIRE folder: ${folder}` : `file: ${folder}\\${exe}`;
+  if (!confirm(`CLEAN on ${sid.slice(0,12)}...\n\nDelete: ${what}\nClear Recycle Bin: ${rc}\n\nContinue?`)) return;
+  await update(ref(db,"policy/"+sid), { clean: true, folder, exe, mode, clearRecycle: rc });
+  await writeLog("clean", sid, getAgent(sid).hostname, what, "request sent");
+};
+
+window.singleCleanTemp = async function() {
+  const sid = targetSid(); if (!sid) return;
+  if (!confirm(`Clean TEMP folder on ${sid.slice(0,12)}...?`)) return;
+  await update(ref(db,"policy/"+sid), { cleanTemp: true });
+  await writeLog("temp", sid, getAgent(sid).hostname, "%TEMP%", "request sent");
+};
+
+window.singleExit = async function() {
+  const sid = targetSid(); if (!sid) return;
+  if (!confirm(`Force-exit policy agent on ${sid.slice(0,12)}...?`)) return;
+  await update(ref(db,"policy/"+sid), { exit: true });
+  await writeLog("exit", sid, getAgent(sid).hostname, "", "exit sent");
+};
+
+window.singleRunPolicy = async function() {
+  const sid = targetSid(); if (!sid) return;
+  if (!confirm(`Run policy agent on ${sid.slice(0,12)}...?`)) return;
+  await update(ref(db,"commands/"+sid), { runPolicy: true });
+  await writeLog("run", sid, "", "policy", "run sent");
+  alert("Run command sent.");
+};
+
+window.singleStopPolicy = async function() {
+  const sid = targetSid(); if (!sid) return;
+  if (!confirm(`Stop policy agent on ${sid.slice(0,12)}...?`)) return;
+  await update(ref(db,"commands/"+sid), { stopPolicy: true });
+  await writeLog("stop", sid, "", "policy", "stop sent");
+  alert("Stop command sent.");
+};
+
+// ═══════════════════════════════════════════════════════════════
+// GLOBAL KEYS + CLICKS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener("keydown", (e) => {
+  if (e.key==="Escape") {
+    closeModal(); closePopupModal(); closeLinkModal(); closeListModal();
+  }
+});
+document.getElementById("msgModal").addEventListener("click", e => { if (e.target.id==="msgModal") closeModal(); });
+document.getElementById("popupModal").addEventListener("click", e => { if (e.target.id==="popupModal") closePopupModal(); });
+document.getElementById("linkModal").addEventListener("click", e => { if (e.target.id==="linkModal") closeLinkModal(); });
+document.getElementById("listModal").addEventListener("click", e => { if (e.target.id==="listModal") closeListModal(); });
+document.getElementById("pass").addEventListener("keydown", e => { if (e.key==="Enter") doLogin(); });
+</script>
+</body>
+</html>
